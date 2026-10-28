@@ -13,11 +13,30 @@ import {
   LeadItem,
   fetchGoldRate,
 } from './services/api';
+import { ShieldCheck, Zap, Lock } from 'lucide-react';
 
 export function App() {
   const [currentTab, setCurrentTab] = useState<'portal' | 'admin'>('portal');
   const [currentStep, setCurrentStep] = useState<1 | 2 | 3>(1);
   const [goldRate, setGoldRate] = useState<number>(7000);
+
+  // Theme State: 'dark' or 'light'
+  const [theme, setTheme] = useState<'dark' | 'light'>(() => {
+    const saved = localStorage.getItem('aurum_theme');
+    if (saved === 'dark' || saved === 'light') return saved;
+    return window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches
+      ? 'light'
+      : 'dark';
+  });
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('aurum_theme', theme);
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
+  };
 
   // Form State
   const [formData, setFormData] = useState<FormDetails>({
@@ -95,7 +114,6 @@ export function App() {
     const nextForm = { ...formData, ...updated };
     setFormData(nextForm);
 
-    // Update validation errors
     const nextErrors: FieldErrors = { ...fieldErrors };
     Object.keys(updated).forEach((k) => {
       const key = k as keyof FormDetails;
@@ -104,7 +122,6 @@ export function App() {
       else delete nextErrors[key];
     });
 
-    // Also revalidate net vs gross relationship
     if (updated.grossWeightGrams !== undefined || updated.netWeightGrams !== undefined) {
       const netErr = validateField('netWeightGrams', nextForm.netWeightGrams);
       if (netErr) nextErrors.netWeightGrams = netErr;
@@ -175,7 +192,6 @@ export function App() {
     setIsSubmitting(true);
     setConflictError(null);
 
-    // Generate unique Idempotency-Key for this submission attempt
     const idempotencyKey = `idemp-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 
     try {
@@ -239,9 +255,27 @@ export function App() {
         currentTab={currentTab}
         onSelectTab={setCurrentTab}
         goldRate={goldRate}
+        theme={theme}
+        onToggleTheme={toggleTheme}
       />
 
       <main className="container">
+        {/* Trust Badges Bar */}
+        <div className="trust-banner">
+          <div className="trust-item">
+            <ShieldCheck size={16} color="var(--primary)" />
+            <span><strong>RBI Regulated:</strong> NBFC Lending Norms</span>
+          </div>
+          <div className="trust-item">
+            <Lock size={15} color="var(--gold)" />
+            <span><strong>Insured:</strong> 100% Vault Transit Protection</span>
+          </div>
+          <div className="trust-item">
+            <Zap size={15} color="var(--primary)" />
+            <span><strong>Disbursal:</strong> In 30 mins via IMPS/NEFT</span>
+          </div>
+        </div>
+
         {currentTab === 'admin' ? (
           <AdminView />
         ) : (
@@ -256,11 +290,11 @@ export function App() {
                     className={`step-item ${currentStep === 1 ? 'active' : currentStep > 1 ? 'completed' : ''}`}
                     onClick={() => setCurrentStep(1)}
                   >
-                    <span className="step-number">1</span>
-                    <span>Details</span>
+                    <span className="step-badge">1</span>
+                    <span>Intake</span>
                   </button>
 
-                  <div className="step-divider" />
+                  <div className="step-line" />
 
                   <button
                     type="button"
@@ -272,11 +306,11 @@ export function App() {
                     }}
                     disabled={Boolean(fieldErrors.grossWeightGrams || fieldErrors.netWeightGrams)}
                   >
-                    <span className="step-number">2</span>
+                    <span className="step-badge">2</span>
                     <span>Live Quote</span>
                   </button>
 
-                  <div className="step-divider" />
+                  <div className="step-line" />
 
                   <button
                     type="button"
@@ -288,8 +322,8 @@ export function App() {
                     }}
                     disabled={!formData.fullName || !formData.mobileNumber}
                   >
-                    <span className="step-number">3</span>
-                    <span>Confirm</span>
+                    <span className="step-badge">3</span>
+                    <span>Approval</span>
                   </button>
                 </div>
               )}
@@ -332,7 +366,7 @@ export function App() {
               )}
             </div>
 
-            {/* Right Column: AI Loan Assistant Chat */}
+            {/* Right Column: AI Concierge Assistant Chat */}
             <div>
               <ChatDrawer
                 onApplicationCreated={(appId) => {

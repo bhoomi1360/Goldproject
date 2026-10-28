@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { fetchLeads, updateLeadStatus, LeadItem } from '../services/api';
-import { RefreshCw, Filter, ShieldCheck, CheckCircle2, Clock, XCircle } from 'lucide-react';
+import { RefreshCw, Filter, ShieldCheck, CheckCircle2, Clock, XCircle, FileSpreadsheet, Scale, IndianRupee } from 'lucide-react';
 
 export const AdminView: React.FC = () => {
   const [leads, setLeads] = useState<LeadItem[]>([]);
@@ -40,16 +40,19 @@ export const AdminView: React.FC = () => {
     }
   };
 
+  const totalCollateral = leads.reduce((acc, l) => acc + (l.netWeightGrams || 0), 0);
+  const totalLoanVolume = leads.reduce((acc, l) => acc + (l.eligibleLoanRupees || 0), 0);
+
   return (
     <div className="card">
-      <div className="admin-header">
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', marginBottom: '1.25rem' }}>
         <div>
           <div className="card-title">
-            <ShieldCheck className="text-primary" size={24} />
-            <span>Field Agent & Underwriter Leads Portal</span>
+            <FileSpreadsheet className="text-primary" size={24} />
+            <span>Field Agent & Underwriter Queue</span>
           </div>
           <p className="card-desc" style={{ marginBottom: 0 }}>
-            All submitted applications. Sensitive mobile numbers are masked (9876XXXX10).
+            Real-time pipeline of borrower intakes. Mobile numbers are securely masked (9876XXXX10).
           </p>
         </div>
 
@@ -58,32 +61,69 @@ export const AdminView: React.FC = () => {
           className="btn btn-outline"
           onClick={loadLeads}
           disabled={isLoading}
-          style={{ fontSize: '0.85rem' }}
+          style={{ padding: '0.5rem 0.9rem', fontSize: '0.85rem' }}
         >
           <RefreshCw size={14} className={isLoading ? 'spin' : ''} />
-          <span>Refresh</span>
+          <span>Refresh Queue</span>
         </button>
       </div>
 
-      {/* Filters */}
+      {/* Metrics Row */}
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+          gap: '1rem',
+          marginBottom: '1.5rem',
+        }}
+      >
+        <div style={{ background: 'var(--bg-elevated)', padding: '1rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }}>
+          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>
+            Total Pipeline Leads
+          </div>
+          <div style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--text-main)', marginTop: '4px' }}>
+            {leads.length}
+          </div>
+        </div>
+
+        <div style={{ background: 'var(--bg-elevated)', padding: '1rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }}>
+          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>
+            Collateral Appraised
+          </div>
+          <div style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--gold)', marginTop: '4px', fontFamily: 'var(--font-mono)' }}>
+            {totalCollateral.toFixed(2)} g
+          </div>
+        </div>
+
+        <div style={{ background: 'var(--bg-elevated)', padding: '1rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }}>
+          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>
+            Total Eligible Value
+          </div>
+          <div style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--primary)', marginTop: '4px', fontFamily: 'var(--font-mono)' }}>
+            ₹{totalLoanVolume.toLocaleString('en-IN')}
+          </div>
+        </div>
+      </div>
+
+      {/* Filters Bar */}
       <div
         style={{
           display: 'flex',
-          gap: '1rem',
+          gap: '0.75rem',
           flexWrap: 'wrap',
           marginBottom: '1.25rem',
           alignItems: 'center',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <Filter size={16} color="var(--text-muted)" />
-          <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Filters:</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+          <Filter size={15} />
+          <span>Filters:</span>
         </div>
 
         <select
           id="admin-plan-filter"
           className="form-input"
-          style={{ width: 'auto', padding: '0.45rem 0.8rem', fontSize: '0.85rem' }}
+          style={{ width: 'auto', padding: '0.45rem 0.85rem', fontSize: '0.85rem' }}
           value={planFilter}
           onChange={(e) => setPlanFilter(e.target.value)}
         >
@@ -95,66 +135,66 @@ export const AdminView: React.FC = () => {
         <select
           id="admin-status-filter"
           className="form-input"
-          style={{ width: 'auto', padding: '0.45rem 0.8rem', fontSize: '0.85rem' }}
+          style={{ width: 'auto', padding: '0.45rem 0.85rem', fontSize: '0.85rem' }}
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
         >
           <option value="">All Statuses</option>
-          <option value="SUBMITTED">Submitted</option>
-          <option value="UNDER_REVIEW">Under Review</option>
-          <option value="APPROVED">Approved</option>
-          <option value="REJECTED">Rejected</option>
+          <option value="SUBMITTED">SUBMITTED</option>
+          <option value="UNDER_REVIEW">UNDER REVIEW</option>
+          <option value="APPROVED">APPROVED</option>
+          <option value="REJECTED">REJECTED</option>
         </select>
       </div>
 
       {/* Leads Table */}
-      <div className="table-responsive">
+      <div className="table-container">
         <table className="leads-table">
           <thead>
             <tr>
               <th>App ID</th>
-              <th>Borrower</th>
-              <th>Masked Mobile</th>
-              <th>Net Weight</th>
+              <th>Applicant</th>
+              <th>Masked Contact</th>
+              <th>Weight</th>
               <th>Purity</th>
-              <th>Scheme</th>
+              <th>Plan</th>
               <th>Loan Offer</th>
               <th>Status</th>
-              <th>Actions</th>
+              <th>Workflow Update</th>
             </tr>
           </thead>
           <tbody>
             {leads.length === 0 ? (
               <tr>
-                <td colSpan={9} style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
-                  {isLoading ? 'Loading leads...' : 'No applications found matching the selected filters.'}
+                <td colSpan={9} style={{ textAlign: 'center', padding: '2.5rem', color: 'var(--text-muted)' }}>
+                  {isLoading ? 'Fetching pipeline leads...' : 'No applications match the current filter criteria.'}
                 </td>
               </tr>
             ) : (
               leads.map((lead) => (
                 <tr key={lead.id} id={`lead-row-${lead.id}`}>
-                  <td style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, color: 'var(--primary)' }}>
+                  <td style={{ fontFamily: 'var(--font-mono)', fontWeight: 800, color: 'var(--primary)' }}>
                     {lead.id}
                   </td>
-                  <td style={{ fontWeight: 600 }}>{lead.fullName}</td>
+                  <td style={{ fontWeight: 700 }}>{lead.fullName}</td>
                   <td style={{ fontFamily: 'var(--font-mono)' }}>{lead.mobileNumber}</td>
-                  <td>{lead.netWeightGrams} g</td>
+                  <td>{lead.netWeightGrams}g</td>
                   <td>{lead.karat}K</td>
                   <td>
                     <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
                       {lead.planName || lead.planId}
                     </span>
                   </td>
-                  <td style={{ fontWeight: 700, color: 'var(--text-main)', fontFamily: 'var(--font-mono)' }}>
+                  <td style={{ fontWeight: 800, color: 'var(--text-main)', fontFamily: 'var(--font-mono)' }}>
                     ₹{lead.eligibleLoanRupees.toLocaleString('en-IN')}
                   </td>
                   <td>
-                    <span className={`status-badge status-${lead.status}`}>{lead.status}</span>
+                    <span className={`status-pill status-${lead.status}`}>{lead.status}</span>
                   </td>
                   <td>
                     <select
                       className="form-input"
-                      style={{ padding: '2px 6px', fontSize: '0.75rem', width: 'auto' }}
+                      style={{ padding: '3px 8px', fontSize: '0.75rem', width: 'auto' }}
                       value={lead.status}
                       disabled={updatingId === lead.id}
                       onChange={(e) => handleStatusChange(lead.id, e.target.value)}

@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { sendChatMessage, ChatResponse } from '../services/api';
-import { Bot, Send, User, Sparkles, Terminal, CheckCircle2, XCircle } from 'lucide-react';
+import { Bot, Send, Terminal, CheckCircle2, XCircle, RotateCcw, User, Sparkles } from 'lucide-react';
 
 interface ChatMessageItem {
   id: string;
@@ -19,7 +19,7 @@ export const ChatDrawer: React.FC<ChatDrawerProps> = ({ onApplicationCreated }) 
     {
       id: 'welcome',
       sender: 'assistant',
-      text: "👋 Hi! I'm your AI Gold Loan Assistant. Tell me what jewellery you have (e.g. *\"I have 45 grams of 22 carat jewellery, how much can I get?\"*), and I'll calculate your loan eligibility in real-time!",
+      text: "👋 Namaste! I am your AI Gold Loan Officer. You can tell me in natural language what jewellery you hold—for example: *\"I have 45 grams of 22 carat jewellery, how much can I get?\"*—and I'll fetch live bullion calculations for you.",
     },
   ]);
 
@@ -80,7 +80,7 @@ export const ChatDrawer: React.FC<ChatDrawerProps> = ({ onApplicationCreated }) 
         {
           id: `err-${Date.now()}`,
           sender: 'assistant',
-          text: '⚠️ Sorry, there was an issue connecting to the Loan Engine. Please try again.',
+          text: '⚠️ Unable to connect to the loan valuation server. Please try again.',
         },
       ]);
     } finally {
@@ -88,50 +88,59 @@ export const ChatDrawer: React.FC<ChatDrawerProps> = ({ onApplicationCreated }) 
     }
   };
 
-  const handleQuickPrompt = (prompt: string) => {
-    handleSendMessage(prompt);
+  const handleResetChat = () => {
+    setMessages([
+      {
+        id: `welcome-${Date.now()}`,
+        sender: 'assistant',
+        text: "👋 Namaste! I am your AI Gold Loan Officer. How can I assist you with your gold loan inquiry today?",
+      },
+    ]);
+    setSessionState({});
   };
 
   return (
     <div className="chat-panel">
-      {/* Header */}
-      <div className="chat-header">
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-          <div
-            style={{
-              width: 32,
-              height: 32,
-              borderRadius: '50%',
-              background: 'var(--primary-light)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: 'var(--primary)',
-            }}
-          >
-            <Bot size={18} />
+      {/* Concierge Header */}
+      <div className="chat-top-bar">
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+          <div className="chat-avatar">
+            <Bot size={20} />
           </div>
           <div>
-            <div style={{ fontWeight: 700, fontSize: '0.95rem' }}>Loan Assist Agent</div>
-            <div className="chat-status">
-              <span className="status-dot"></span>
-              <span>Tools Connected & Active</span>
+            <div style={{ fontWeight: 800, fontSize: '0.95rem', color: 'var(--text-main)' }}>
+              Loan Assist Concierge
+            </div>
+            <div style={{ fontSize: '0.725rem', color: 'var(--success)', display: 'flex', alignItems: 'center', gap: '4px', fontWeight: 600 }}>
+              <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--success)', display: 'inline-block' }}></span>
+              <span>Backend Engine Online</span>
             </div>
           </div>
         </div>
+
+        <button
+          type="button"
+          onClick={handleResetChat}
+          className="btn-outline"
+          style={{ padding: '4px 8px', borderRadius: 'var(--radius-sm)', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}
+          title="Restart Conversation"
+        >
+          <RotateCcw size={12} />
+          <span>Clear</span>
+        </button>
       </div>
 
-      {/* Messages */}
+      {/* Message Timeline */}
       <div className="chat-messages" id="chat-messages-container">
         {messages.map((m) => (
           <div key={m.id} className={`chat-bubble ${m.sender}`}>
             {/* Tool Execution Chips */}
             {m.toolCalls && m.toolCalls.length > 0 && (
-              <div style={{ marginBottom: '0.4rem' }}>
+              <div style={{ marginBottom: '0.4rem', display: 'flex', flexDirection: 'column', gap: '2px' }}>
                 {m.toolCalls.map((tc, idx) => (
-                  <div key={idx} className="chat-tool-chip">
-                    <Terminal size={12} />
-                    <span>called {tc.name}()</span>
+                  <div key={idx} className="tool-badge-chip">
+                    <Terminal size={11} />
+                    <span>backend: {tc.name}()</span>
                   </div>
                 ))}
               </div>
@@ -139,29 +148,40 @@ export const ChatDrawer: React.FC<ChatDrawerProps> = ({ onApplicationCreated }) 
 
             <div style={{ whiteSpace: 'pre-line' }}>{m.text}</div>
 
-            {/* In-chat confirmation card if required */}
+            {/* In-chat confirmation card if submission is pending */}
             {m.requiresConfirmation && (
-              <div className="chat-confirmation-card">
-                <div style={{ fontWeight: 700, fontSize: '0.8rem', color: 'var(--primary)', marginBottom: '4px' }}>
+              <div
+                style={{
+                  marginTop: '0.75rem',
+                  padding: '0.75rem',
+                  background: 'var(--bg-card)',
+                  border: '1.5px solid var(--primary)',
+                  borderRadius: 'var(--radius-md)',
+                }}
+              >
+                <div style={{ fontWeight: 800, fontSize: '0.8rem', color: 'var(--primary)', marginBottom: '4px' }}>
                   Confirmation Required
                 </div>
-                <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '8px' }}>
+                  Submit application for <strong>{m.requiresConfirmation.summary.fullName}</strong> ({m.requiresConfirmation.summary.eligibleLoan})?
+                </div>
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
                   <button
                     type="button"
                     className="btn btn-primary"
-                    style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }}
+                    style={{ padding: '0.35rem 0.75rem', fontSize: '0.75rem' }}
                     onClick={() => handleSendMessage('yes, confirm')}
                   >
-                    <CheckCircle2 size={14} />
-                    <span>Confirm & Submit</span>
+                    <CheckCircle2 size={13} />
+                    <span>Confirm</span>
                   </button>
                   <button
                     type="button"
                     className="btn btn-outline"
-                    style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }}
+                    style={{ padding: '0.35rem 0.75rem', fontSize: '0.75rem' }}
                     onClick={() => handleSendMessage('no, cancel')}
                   >
-                    <XCircle size={14} />
+                    <XCircle size={13} />
                     <span>Cancel</span>
                   </button>
                 </div>
@@ -171,45 +191,43 @@ export const ChatDrawer: React.FC<ChatDrawerProps> = ({ onApplicationCreated }) 
         ))}
 
         {isTyping && (
-          <div className="chat-bubble assistant">
-            <span style={{ fontStyle: 'italic', color: 'var(--text-muted)', fontSize: '0.8rem' }}>
-              Assistant is calling financial tools...
+          <div className="chat-bubble assistant" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+              Verifying backend tools...
             </span>
           </div>
         )}
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Quick Prompt Pills */}
-      <div className="quick-prompts">
+      {/* Natural Quick Prompts */}
+      <div className="quick-prompts-scroll">
         <button
           type="button"
-          className="quick-pill"
-          onClick={() =>
-            handleQuickPrompt('I have 45 grams of 22 carat jewellery, how much can I get?')
-          }
+          className="quick-prompt-pill"
+          onClick={() => handleSendMessage('I have 45 grams of 22 carat jewellery, how much can I get?')}
         >
-          ✨ "45g of 22K jewellery quote"
+          🪙 "45g 22K jewellery quote"
         </button>
         <button
           type="button"
-          className="quick-pill"
-          onClick={() => handleQuickPrompt('What loan schemes are available?')}
+          className="quick-prompt-pill"
+          onClick={() => handleSendMessage('What loan schemes are available?')}
         >
-          📜 "Available schemes"
+          📜 "Available loan plans"
         </button>
         <button
           type="button"
-          className="quick-pill"
-          onClick={() => handleQuickPrompt('I have 10 grams of 18k gold')}
+          className="quick-prompt-pill"
+          onClick={() => handleSendMessage('I have 10 grams of 18k gold')}
         >
-          💎 "10g 18K quote"
+          💎 "10g 18K calculation"
         </button>
       </div>
 
-      {/* Input Bar */}
+      {/* Input Form */}
       <form
-        className="chat-input-bar"
+        className="chat-input-row"
         onSubmit={(e) => {
           e.preventDefault();
           handleSendMessage();
@@ -218,8 +236,9 @@ export const ChatDrawer: React.FC<ChatDrawerProps> = ({ onApplicationCreated }) 
         <input
           id="chat-user-input"
           type="text"
-          className="chat-input"
-          placeholder="Ask about your jewellery or loan..."
+          className="form-input"
+          style={{ padding: '0.65rem 0.9rem', fontSize: '0.875rem' }}
+          placeholder="Type jewellery weight or loan question..."
           value={input}
           onChange={(e) => setInput(e.target.value)}
           disabled={isTyping}
