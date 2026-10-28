@@ -1,0 +1,19 @@
+services:
+  gold-loan-portal:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: aurumflow-gold-portal
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+      - NODE_ENV=production
+      - DB_PATH=/app/data/gold_loan.db
+      - BENCHMARK_24K_RATE=7000
+    volumes:
+      - portal-data:/app/data
+    restart: unless-stopped
+
+volumes:
+  portal-data:
